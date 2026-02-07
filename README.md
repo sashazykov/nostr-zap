@@ -1,5 +1,8 @@
 # nostr-zap
 
+[![CI](https://github.com/sashazykov/nostr-zap/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/sashazykov/nostr-zap/actions/workflows/ci.yml)
+[![Gem Version](https://badge.fury.io/rb/nostr-zap.svg)](https://rubygems.org/gems/nostr-zap)
+
 A Ruby toolkit for NOSTR [NIP-57](https://github.com/nostr-protocol/nips/blob/master/57.md) Lightning Zaps. Validate zap requests, build zap receipts, publish to relays.
 
 No Rails dependency required.
