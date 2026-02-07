@@ -78,7 +78,7 @@ if validator.valid?
   validator.amount_msats      # => 1000
   validator.zapped_event_id   # => "hex event id" or nil
 else
-  validator.errors  # => ["Invalid kind: expected 9734, got 1"]
+  validator.errors  # => ["Invalid kind: expected integer 9734, got 1"]
 end
 ```
 
@@ -148,7 +148,6 @@ NostrZap::Error              # base
 ## Dependencies
 
 - [bip-schnorr](https://rubygems.org/gems/bip-schnorr) ~> 0.7 -- BIP-340 Schnorr signatures
-- [concurrent-ruby](https://rubygems.org/gems/concurrent-ruby) ~> 1.0 -- concurrent relay publishing
 - [websocket](https://rubygems.org/gems/websocket) ~> 1.0 -- WebSocket handshake and framing
 
 ## Development

@@ -5,7 +5,7 @@ require 'websocket'
 require 'openssl'
 require 'uri'
 require 'json'
-require 'concurrent'
+require 'resolv'
 
 module NostrZap
   # Client for publishing NOSTR events to relay servers via WebSocket.
@@ -43,15 +43,18 @@ module NostrZap
     # @param relay_urls [Array<String>] List of relay WebSocket URLs
     # @return [Hash] Map of relay URL to result { success: bool, message: String }
     def publish_event(event:, relay_urls:)
-      futures = relay_urls.to_h do |relay_url|
-        future = Concurrent::Promises.future do
+      threads = relay_urls.to_h do |relay_url|
+        thread = Thread.new do
           publish_to_relay(event: event, relay_url: relay_url)
         end
-        [relay_url, future]
+        [relay_url, thread]
       end
 
-      futures.transform_values do |future|
-        future.value(@timeout) || { success: false, message: 'Connection timeout' }
+      threads.transform_values do |thread|
+        next thread.value if thread.join(@timeout)
+
+        thread.kill
+        { success: false, message: 'Connection timeout' }
       end
     end
 
@@ -68,17 +71,31 @@ module NostrZap
       perform_handshake(socket, uri)
       send_event(socket, event)
       wait_for_ok_response(socket, event_id)
-    rescue => e
+    rescue StandardError => e
       @logger&.error("NostrZap::RelayClient error for #{relay_url}: #{e.message}")
       { success: false, message: e.message }
     ensure
       socket&.close
     end
 
-  private
+    private
 
     def create_socket(uri)
-      tcp_socket = TCPSocket.new(uri.host, uri.port || ((uri.scheme == 'wss') ? 443 : 80))
+      connect_hosts = resolve_connect_hosts(uri.host)
+      port = uri.port || (uri.scheme == 'wss' ? 443 : 80)
+      tcp_socket = nil
+      last_error = nil
+
+      connect_hosts.each do |connect_host|
+        tcp_socket = TCPSocket.new(connect_host, port)
+        break
+      rescue StandardError => e
+        last_error = e
+      end
+
+      if tcp_socket.nil?
+        raise PublishError, "Could not connect to relay host #{uri.host}: #{last_error&.message || 'unknown error'}"
+      end
 
       if uri.scheme == 'wss'
         ssl_context = OpenSSL::SSL::SSLContext.new
@@ -91,6 +108,22 @@ module NostrZap
       else
         tcp_socket
       end
+    end
+
+    def resolve_connect_hosts(host)
+      addresses = Resolv.getaddresses(host)
+      raise PublishError, "Relay host could not be resolved: #{host}" if addresses.empty?
+
+      public_addresses = addresses.select { |addr| public_ip_address?(addr) }
+      return public_addresses if public_addresses.any?
+
+      raise PublishError, "Relay host resolves only to private/reserved addresses: #{host}"
+    rescue Resolv::ResolvError
+      raise PublishError, "Relay host could not be resolved: #{host}"
+    end
+
+    def public_ip_address?(address)
+      RelayUrlValidator::PRIVATE_IP_RANGES.none? { |range| range.include?(address) }
     end
 
     def perform_handshake(socket, uri)
@@ -169,7 +202,7 @@ module NostrZap
 
       {
         success: parsed[2] == true,
-        message: (relay_message.nil? || relay_message.empty?) ? default_message : relay_message,
+        message: relay_message.nil? || relay_message.empty? ? default_message : relay_message
       }
     rescue JSON::ParserError
       nil

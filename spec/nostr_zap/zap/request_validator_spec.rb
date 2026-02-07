@@ -14,9 +14,9 @@ RSpec.describe NostrZap::Zap::RequestValidator do
     created_at = 1_609_459_200
     kind = 9734
     tags = [
-      %w[p recipient_pubkey_hex],
+      ['p', 'b' * 64],
       ['relays', 'wss://relay1.example.com', 'wss://relay2.example.com'],
-      %w[amount 21000],
+      %w[amount 21000]
     ]
     content = ''
 
@@ -30,7 +30,7 @@ RSpec.describe NostrZap::Zap::RequestValidator do
       'kind' => kind,
       'tags' => tags,
       'content' => content,
-      'sig' => 'a' * 128,
+      'sig' => 'a' * 128
     }
   end
 
@@ -82,6 +82,22 @@ RSpec.describe NostrZap::Zap::RequestValidator do
       end
     end
 
+    context 'with non-integer kind' do
+      let :zap_request_json do
+        event = valid_event.merge('kind' => 9734.0)
+        recompute_id(event).to_json
+      end
+
+      it 'returns false' do
+        expect(validator.valid?).to be(false)
+      end
+
+      it 'adds an error about invalid kind' do
+        validator.valid?
+        expect(validator.errors.first).to match(/Invalid kind/)
+      end
+    end
+
     context 'without p tag' do
       let :zap_request_json do
         event = valid_event.dup
@@ -91,6 +107,42 @@ RSpec.describe NostrZap::Zap::RequestValidator do
 
       it 'returns false' do
         expect(validator.valid?).to be(false)
+      end
+    end
+
+    context 'with malformed p tag value' do
+      let :zap_request_json do
+        event = valid_event.dup
+        event['tags'] = event['tags'].reject { |tag| tag[0] == 'p' }
+        event['tags'] << ['p', 'not-a-hex-pubkey']
+        recompute_id(event).to_json
+      end
+
+      it 'returns false' do
+        expect(validator.valid?).to be(false)
+      end
+
+      it 'adds an error about p tag format' do
+        validator.valid?
+        expect(validator.errors.first).to match(/Invalid 'p' tag/)
+      end
+    end
+
+    context 'with non-string p tag value' do
+      let :zap_request_json do
+        event = valid_event.dup
+        event['tags'] = event['tags'].reject { |tag| tag[0] == 'p' }
+        event['tags'] << ['p', 123]
+        recompute_id(event).to_json
+      end
+
+      it 'returns false' do
+        expect(validator.valid?).to be(false)
+      end
+
+      it 'adds an error about missing p tag value' do
+        validator.valid?
+        expect(validator.errors.first).to match(/Missing required 'p' tag/)
       end
     end
 
@@ -150,9 +202,9 @@ RSpec.describe NostrZap::Zap::RequestValidator do
         created_at = 1_609_459_200
         kind = 9734
         tags = [
-          ['p', 'recipient_pubkey_hex'],
+          ['p', 'b' * 64],
           ['relays', 'wss://relay1.example.com'],
-          ['amount', '21000'],
+          ['amount', '21000']
         ]
         content = ''
 
@@ -167,7 +219,7 @@ RSpec.describe NostrZap::Zap::RequestValidator do
           'kind' => kind,
           'tags' => tags,
           'content' => content,
-          'sig' => signature,
+          'sig' => signature
         }
       end
 
@@ -198,7 +250,7 @@ RSpec.describe NostrZap::Zap::RequestValidator do
     before { validator.valid? }
 
     it 'returns the pubkey from the p tag' do
-      expect(validator.recipient_pubkey).to eq('recipient_pubkey_hex')
+      expect(validator.recipient_pubkey).to eq('b' * 64)
     end
   end
 

@@ -22,10 +22,9 @@ Gem::Specification.new do |spec|
   spec.metadata['changelog_uri'] = "#{spec.homepage}/blob/main/CHANGELOG.md"
   spec.metadata['rubygems_mfa_required'] = 'true'
 
-  spec.files = Dir['lib/**/*.rb', 'LICENSE.txt', 'README.md', 'CHANGELOG.md']
+  spec.files = Dir['lib/**/*.rb', 'LICENSE', 'README.md']
   spec.require_paths = ['lib']
 
   spec.add_dependency 'bip-schnorr', '~> 0.7'
-  spec.add_dependency 'concurrent-ruby', '~> 1.0'
   spec.add_dependency 'websocket', '~> 1.0'
 end

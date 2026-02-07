@@ -69,7 +69,7 @@ module NostrZap
         find_tag_value('e')
       end
 
-    private
+      private
 
       def find_tag_value(tag_name)
         return nil unless @parsed_event
@@ -113,9 +113,10 @@ module NostrZap
       end
 
       def kind_valid?
-        return true if @parsed_event['kind'] == ZAP_REQUEST_KIND
+        kind = @parsed_event['kind']
+        return true if kind.is_a?(Integer) && kind == ZAP_REQUEST_KIND
 
-        fail_with("Invalid kind: expected #{ZAP_REQUEST_KIND}, got #{@parsed_event['kind']}")
+        fail_with("Invalid kind: expected integer #{ZAP_REQUEST_KIND}, got #{kind.inspect}")
       end
 
       def tags_valid?
@@ -124,9 +125,12 @@ module NostrZap
 
       def p_tag_valid?
         p_tag = @parsed_event['tags']&.find { |tag| tag[0] == 'p' }
-        return true if p_tag && p_tag[1] && !p_tag[1].empty?
+        value = p_tag&.[](1)
+        return fail_with("Missing required 'p' tag (recipient pubkey)") unless value.is_a?(String) && !value.empty?
 
-        fail_with("Missing required 'p' tag (recipient pubkey)")
+        return true if value.is_a?(String) && value.match?(/\A[0-9a-f]{64}\z/i)
+
+        fail_with("Invalid 'p' tag: expected 64-character hex pubkey")
       end
 
       def relays_tag_valid?
@@ -145,7 +149,7 @@ module NostrZap
           created_at: @parsed_event['created_at'],
           kind: @parsed_event['kind'],
           tags: @parsed_event['tags'],
-          content: @parsed_event['content'],
+          content: @parsed_event['content']
         )
         return true if @parsed_event['id'] == computed
 
@@ -158,12 +162,12 @@ module NostrZap
         valid = Crypto.verify_signature?(
           @parsed_event['id'],
           @parsed_event['pubkey'],
-          @parsed_event['sig'],
+          @parsed_event['sig']
         )
         return true if valid
 
         fail_with('Invalid signature')
-      rescue => e
+      rescue StandardError => e
         fail_with("Signature validation error: #{e.message}")
       end
     end
