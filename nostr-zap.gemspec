@@ -13,7 +13,7 @@ Gem::Specification.new do |spec|
                      'event signing/verification, zap request validation, zap receipt construction, ' \
                      'relay publishing via WebSocket, and SSRF-safe relay URL validation. ' \
                      'No Rails dependency required.'
-  spec.homepage = 'https://github.com/nicecatch/nostr-zap'
+  spec.homepage = 'https://github.com/sashazykov/nostr-zap'
   spec.license = 'MIT'
   spec.required_ruby_version = '>= 3.1.0'
 
