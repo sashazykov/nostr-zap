@@ -75,7 +75,7 @@ RSpec.describe NostrZap::RelayUrlValidator do
         allow(Resolv).to receive(:getaddresses).with('unresolvable.example.com').and_raise(Resolv::ResolvError)
       end
 
-      it { is_expected.to match(%r{private/reserved address}) }
+      it { is_expected.to be_nil }
     end
 
     context 'when DNS returns no addresses' do
@@ -83,7 +83,15 @@ RSpec.describe NostrZap::RelayUrlValidator do
 
       before { allow(Resolv).to receive(:getaddresses).with('no-records.example.com').and_return([]) }
 
-      it { is_expected.to match(%r{private/reserved address}) }
+      it { is_expected.to be_nil }
+    end
+
+    context 'when relay host does not resolve but is not a literal private IP' do
+      let(:url) { 'wss://relay.nostr.bg' }
+
+      before { allow(Resolv).to receive(:getaddresses).with('relay.nostr.bg').and_return([]) }
+
+      it { is_expected.to be_nil }
     end
 
     context 'with a malformed URI' do

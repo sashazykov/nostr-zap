@@ -131,6 +131,9 @@ error = NostrZap::RelayUrlValidator.validate("ws://localhost")
 
 error = NostrZap::RelayUrlValidator.validate("wss://192.168.1.1")
 # => "Relay URL points to a private/reserved address: wss://192.168.1.1"
+
+error = NostrZap::RelayUrlValidator.validate("wss://relay.nostr.bg")
+# => nil (hostnames that do not currently resolve are accepted)
 ```
 
 Blocked IP ranges: `127.0.0.0/8`, `10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16`, `169.254.0.0/16`, `0.0.0.0/8`, `::1`, `fc00::/7`, `fe80::/10`.

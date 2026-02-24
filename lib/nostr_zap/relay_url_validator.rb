@@ -27,7 +27,7 @@ module NostrZap
       IPAddr.new('0.0.0.0/8'),
       IPAddr.new('::1/128'),
       IPAddr.new('fc00::/7'),
-      IPAddr.new('fe80::/10'),
+      IPAddr.new('fe80::/10')
     ].freeze
 
     def self.validate(url)
@@ -46,7 +46,7 @@ module NostrZap
       "Invalid relay URL: #{@url}"
     end
 
-  private
+    private
 
     def validate_scheme(uri)
       return if uri.scheme == 'wss'
@@ -67,12 +67,25 @@ module NostrZap
     end
 
     def private_host?(host)
-      addresses = Resolv.getaddresses(host)
-      return true if addresses.empty?
+      ip = parse_ip_literal(host)
+      return private_ip?(ip) if ip
 
-      addresses.any? { |addr| PRIVATE_IP_RANGES.any? { |range| range.include?(addr) } }
+      addresses = Resolv.getaddresses(host)
+      return false if addresses.empty?
+
+      addresses.any? { |addr| private_ip?(addr) }
     rescue Resolv::ResolvError
-      true
+      false
+    end
+
+    def parse_ip_literal(host)
+      IPAddr.new(host)
+    rescue IPAddr::InvalidAddressError
+      nil
+    end
+
+    def private_ip?(ip)
+      PRIVATE_IP_RANGES.any? { |range| range.include?(ip) }
     end
   end
 end

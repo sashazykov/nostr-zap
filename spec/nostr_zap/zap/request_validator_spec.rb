@@ -178,6 +178,18 @@ RSpec.describe NostrZap::Zap::RequestValidator do
       end
     end
 
+    context 'with relay URL that does not resolve' do
+      let(:zap_request_json) { event_with_relays(['wss://relay.nostr.bg']) }
+
+      before do
+        allow(Resolv).to receive(:getaddresses).with('relay.nostr.bg').and_return([])
+      end
+
+      it 'returns true' do
+        expect(validator.valid?).to be(true)
+      end
+    end
+
     context 'with invalid event ID' do
       let(:zap_request_json) { valid_event.merge('id' => 'a' * 64).to_json }
 
