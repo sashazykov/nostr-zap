@@ -139,7 +139,7 @@ module NostrZap
         return fail_with("Missing required 'relays' tag with at least one relay URL") if urls.nil? || urls.empty?
 
         urls.all? do |url|
-          (error = RelayUrlValidator.validate(url)) ? fail_with(error) : true
+          (error = RelayUrlValidator.validate(url, check_private: false)) ? fail_with(error) : true
         end
       end
 

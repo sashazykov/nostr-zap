@@ -127,7 +127,10 @@ error = NostrZap::RelayUrlValidator.validate("wss://relay.example.com")
 # => nil (valid)
 
 error = NostrZap::RelayUrlValidator.validate("ws://localhost")
-# => "Invalid relay URL scheme 'ws' (only wss is allowed): ws://localhost"
+# => "Relay URL points to a private/reserved address: ws://localhost"
+
+error = NostrZap::RelayUrlValidator.validate("ws://localhost:4848", check_private: false)
+# => nil
 
 error = NostrZap::RelayUrlValidator.validate("wss://192.168.1.1")
 # => "Relay URL points to a private/reserved address: wss://192.168.1.1"

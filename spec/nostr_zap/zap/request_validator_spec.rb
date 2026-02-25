@@ -158,8 +158,16 @@ RSpec.describe NostrZap::Zap::RequestValidator do
       end
     end
 
-    context 'with non-wss relay URL scheme' do
+    context 'with ws relay URL scheme' do
       let(:zap_request_json) { event_with_relays(['ws://relay.example.com']) }
+
+      it 'returns true' do
+        expect(validator.valid?).to be(true)
+      end
+    end
+
+    context 'with non-websocket relay URL scheme' do
+      let(:zap_request_json) { event_with_relays(['http://relay.example.com']) }
 
       it 'returns false' do
         expect(validator.valid?).to be(false)
@@ -173,8 +181,20 @@ RSpec.describe NostrZap::Zap::RequestValidator do
         allow(Resolv).to receive(:getaddresses).with('internal.example.com').and_return(['192.168.1.1'])
       end
 
-      it 'returns false' do
-        expect(validator.valid?).to be(false)
+      it 'returns true' do
+        expect(validator.valid?).to be(true)
+      end
+    end
+
+    context 'with relay URL pointing to localhost over ws' do
+      let(:zap_request_json) { event_with_relays(['ws://localhost:4848']) }
+
+      before do
+        allow(Resolv).to receive(:getaddresses).with('localhost').and_return(['127.0.0.1'])
+      end
+
+      it 'returns true' do
+        expect(validator.valid?).to be(true)
       end
     end
 

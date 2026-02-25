@@ -5,8 +5,11 @@ require 'resolv'
 require 'uri'
 
 module NostrZap
-  # Validates that a relay URL is safe to connect to.
-  # Enforces wss:// scheme and blocks private/reserved IP ranges to prevent SSRF.
+  # Validates relay URLs for zap flows.
+  #
+  # By default, accepts ws:// and wss:// schemes and blocks private/reserved
+  # hosts to prevent SSRF. Private host checks can be disabled when validating
+  # relay tags in incoming zap requests.
   #
   # Returns nil if valid, or an error message string if invalid.
   #
@@ -15,7 +18,7 @@ module NostrZap
   #   error # => nil (valid)
   #
   #   error = NostrZap::RelayUrlValidator.validate('ws://localhost')
-  #   error # => "Invalid relay URL scheme 'ws' (only wss is allowed): ws://localhost"
+  #   error # => "Relay URL points to a private/reserved address: ws://localhost"
   #
   class RelayUrlValidator
     PRIVATE_IP_RANGES = [
@@ -30,12 +33,13 @@ module NostrZap
       IPAddr.new('fe80::/10')
     ].freeze
 
-    def self.validate(url)
-      new(url).validate
+    def self.validate(url, check_private: true)
+      new(url, check_private: check_private).validate
     end
 
-    def initialize(url)
+    def initialize(url, check_private: true)
       @url = url
+      @check_private = check_private
     end
 
     def validate
@@ -48,10 +52,12 @@ module NostrZap
 
     private
 
-    def validate_scheme(uri)
-      return if uri.scheme == 'wss'
+    attr_reader :check_private
 
-      "Invalid relay URL scheme '#{uri.scheme}' (only wss is allowed): #{@url}"
+    def validate_scheme(uri)
+      return if %w[ws wss].include?(uri.scheme)
+
+      "Invalid relay URL scheme '#{uri.scheme}' (only ws or wss is allowed): #{@url}"
     end
 
     def validate_host(uri)
@@ -61,6 +67,7 @@ module NostrZap
     end
 
     def validate_not_private(uri)
+      return unless check_private
       return unless private_host?(uri.host)
 
       "Relay URL points to a private/reserved address: #{@url}"

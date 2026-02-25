@@ -19,7 +19,13 @@ RSpec.describe NostrZap::RelayUrlValidator do
     context 'with ws:// scheme' do
       let(:url) { 'ws://relay.example.com' }
 
-      it { is_expected.to match(/only wss is allowed/) }
+      it { is_expected.to be_nil }
+    end
+
+    context 'with non-websocket scheme' do
+      let(:url) { 'http://relay.example.com' }
+
+      it { is_expected.to match(/only ws or wss is allowed/) }
     end
 
     context 'with missing host' do
@@ -34,6 +40,16 @@ RSpec.describe NostrZap::RelayUrlValidator do
       before { allow(Resolv).to receive(:getaddresses).with('localhost').and_return(['127.0.0.1']) }
 
       it { is_expected.to match(%r{private/reserved address}) }
+    end
+
+    context 'with localhost and private checks disabled' do
+      let(:url) { 'ws://localhost:4848' }
+
+      before { allow(Resolv).to receive(:getaddresses).with('localhost').and_return(['127.0.0.1']) }
+
+      it 'accepts the URL' do
+        expect(described_class.validate(url, check_private: false)).to be_nil
+      end
     end
 
     context 'with private 10.x range' do
