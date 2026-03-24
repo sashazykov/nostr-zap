@@ -5,10 +5,6 @@ require 'spec_helper'
 RSpec.describe NostrZap::Zap::RequestValidator do
   subject(:validator) { described_class.new(zap_request_json, verify_signatures: false) }
 
-  before do
-    allow(Resolv).to receive(:getaddresses).and_return(['93.184.215.14'])
-  end
-
   let :valid_event do
     pubkey = '79be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798'
     created_at = 1_609_459_200
@@ -158,54 +154,17 @@ RSpec.describe NostrZap::Zap::RequestValidator do
       end
     end
 
-    context 'with ws relay URL scheme' do
-      let(:zap_request_json) { event_with_relays(['ws://relay.example.com']) }
-
-      it 'returns true' do
-        expect(validator.valid?).to be(true)
-      end
-    end
-
-    context 'with non-websocket relay URL scheme' do
-      let(:zap_request_json) { event_with_relays(['http://relay.example.com']) }
-
-      it 'returns false' do
-        expect(validator.valid?).to be(false)
-      end
-    end
-
-    context 'with relay URL pointing to a private IP' do
-      let(:zap_request_json) { event_with_relays(['wss://internal.example.com']) }
-
-      before do
-        allow(Resolv).to receive(:getaddresses).with('internal.example.com').and_return(['192.168.1.1'])
+    context 'with any relay URL strings' do
+      let(:zap_request_json) do
+        event_with_relays([
+          'wss://relay.example.com',
+          'ws://localhost:4848',
+          'http://not-a-websocket.example.com',
+          'wss://192.168.1.1'
+        ])
       end
 
-      it 'returns true' do
-        expect(validator.valid?).to be(true)
-      end
-    end
-
-    context 'with relay URL pointing to localhost over ws' do
-      let(:zap_request_json) { event_with_relays(['ws://localhost:4848']) }
-
-      before do
-        allow(Resolv).to receive(:getaddresses).with('localhost').and_return(['127.0.0.1'])
-      end
-
-      it 'returns true' do
-        expect(validator.valid?).to be(true)
-      end
-    end
-
-    context 'with relay URL that does not resolve' do
-      let(:zap_request_json) { event_with_relays(['wss://relay.nostr.bg']) }
-
-      before do
-        allow(Resolv).to receive(:getaddresses).with('relay.nostr.bg').and_return([])
-      end
-
-      it 'returns true' do
+      it 'accepts without validating URL format' do
         expect(validator.valid?).to be(true)
       end
     end

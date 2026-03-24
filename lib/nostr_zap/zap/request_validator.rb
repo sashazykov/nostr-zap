@@ -11,7 +11,7 @@ module NostrZap
     # - Have kind = 9734
     # - Have a valid Schnorr signature (when verification is enabled)
     # - Have a 'p' tag with the recipient's pubkey
-    # - Have a 'relays' tag with at least one safe relay URL
+    # - Have a 'relays' tag with at least one relay URL
     #
     # @example
     #   validator = NostrZap::Zap::RequestValidator.new(json_string)
@@ -138,9 +138,7 @@ module NostrZap
         urls = relays_tag&.slice(1..)&.compact
         return fail_with("Missing required 'relays' tag with at least one relay URL") if urls.nil? || urls.empty?
 
-        urls.all? do |url|
-          (error = RelayUrlValidator.validate(url, check_private: false)) ? fail_with(error) : true
-        end
+        true
       end
 
       def event_id_valid?
