@@ -161,7 +161,7 @@ NostrZap::Error              # base
 ```sh
 cd gems/nostr-zap
 bundle install
-bundle exec rspec       # 86 specs
+bundle exec rspec       # 99 specs
 bundle exec rubocop
 ```
 
